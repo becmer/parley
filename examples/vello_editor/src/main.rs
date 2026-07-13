@@ -336,10 +336,11 @@ impl ApplicationHandler<accesskit_winit::Event> for SimpleVelloApp<'_> {
                     .expect("failed to render to surface");
 
                 // Get the surface's texture.
-                let surface_texture = surface
-                    .surface
-                    .get_current_texture()
-                    .expect("failed to get surface texture");
+                let surface_texture = match surface.surface.get_current_texture() {
+                    wgpu::CurrentSurfaceTexture::Success(t)
+                    | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
+                    other => panic!("failed to get surface texture: {other:?}"),
+                };
 
                 // Perform the copy.
                 let mut encoder =
@@ -360,7 +361,7 @@ impl ApplicationHandler<accesskit_winit::Event> for SimpleVelloApp<'_> {
                 // Queue the texture to be presented on the surface.
                 surface_texture.present();
 
-                device_handle.device.poll(wgpu::Maintain::Poll);
+                let _ = device_handle.device.poll(wgpu::PollType::Poll);
             }
             _ => {}
         }
